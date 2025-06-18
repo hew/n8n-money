@@ -6,10 +6,19 @@
   "scripts": {
     "start": "node scripts/mcp-server.js",
     "start:mcp": "node scripts/mcp-server.js",
-    "test:mcp": "node scripts/test-mcp-server.js",
     "test:compilation": "./scripts/start-mcp-demo.sh",
     "dev": "nodemon scripts/mcp-server.js",
-    "import-workflows": "node scripts/import-workflows.js"
+    "import-workflows": "node scripts/import-workflows.js",
+    "debug:mcp": "node scripts/mcp-debug-suite.js",
+    "validate:mcp": "node scripts/validate-mcp-integration.js",
+    "fix:mcp": "node scripts/fix-mcp-integration.js",
+    "debug:all": "bun run debug:mcp && bun run validate:mcp",
+    "fix:auto": "bun run fix:mcp && bun run validate:mcp",
+    "health:check": "curl -f $N8N_BASE_URL/healthz -H \"X-N8N-API-KEY: $N8N_API_KEY\"",
+    "webhook:test": "curl -X POST $N8N_BASE_URL/webhook/compile-video -H \"Content-Type: application/json\" -d '{\"query\": \"test\", \"max_clips\": 1}'",
+    "clean:logs": "find ~/.n8n/logs -name \"*.log\" -mtime +7 -delete 2>/dev/null || true",
+    "backup:config": "tar -czf backup-$(date +%Y%m%d).tar.gz config/ workflows/ scripts/",
+    "setup:env": "cp .env.example .env && echo 'Please update the API keys in .env file'"
   },
   "keywords": [
     "n8n",

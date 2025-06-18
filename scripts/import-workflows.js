@@ -174,7 +174,8 @@ async function main() {
         // Import workflows
         const workflowFiles = [
             './workflows/insurance-claims-workflow.json',
-            './workflows/video-generation-workflow.json'
+            './workflows/video-generation-workflow.json',
+            './workflows/stock-analysis-workflow.json'
         ];
         
         const importedWorkflows = [];

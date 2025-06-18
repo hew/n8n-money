@@ -5,6 +5,11 @@
 - Use `bun add` for installing packages
 - Use `bun run` for executing scripts
 
+## n8n Server Management
+- Always run n8n with `bunx n8n` (no tunnel option)
+- Do not use npm or npx to start n8n
+- Start n8n without tunneling for local development
+
 ## n8n Workflow Development
 - When creating n8n workflows, always include proper error handling nodes
 - Use descriptive node names that clearly indicate their purpose
@@ -46,10 +51,14 @@
 
 ## File Organization
 - Keep configuration files in the root directory
-- Use descriptive filenames (e.g., `import-workflows.js`, `test-mcp-server.js`)
+- Use descriptive filenames (e.g., `import-workflows.js`, `validate-mcp-integration.js`)
 - Separate concerns into different files
 - Include proper file headers with purpose descriptions
 - Use consistent naming conventions across files
+- **AVOID creating temporary test files or "test-whatever.js" scripts**
+- Only create new files when absolutely necessary after multiple debugging attempts
+- Prefer using existing comprehensive debugging tools over creating new test scripts
+- Clean up any temporary files created during development
 
 ## Testing & Debugging
 - Always include console.log statements for debugging complex operations

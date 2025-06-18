@@ -40,9 +40,11 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "compile-video",
+        "path": "/compile-video",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {},
+        "authentication": "headerAuth",
+        "authPropertyName": "X-API-Key"
       },
       "id": "ad54512b-4f71-43f5-a0d1-d3697f11f6e5",
       "name": "Video Request Webhook",
@@ -56,7 +58,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get video details for selected videos\nconst selectedVideos = $input.first().json.selectedVideos;\n\n// Create requests for video details (duration, statistics, etc.)\nconst videoIds = selectedVideos.map(v => v.videoId).join(',');\n\nreturn [{\n  json: {\n    videoIds: videoIds,\n    selectedVideos: selectedVideos\n  }\n}];"
+        "jsCode": "try {\n    // Get video details for selected videos\n  const selectedVideos = $input.first().json.selectedVideos;\n  \n  // Create requests for video details (duration, statistics, etc.)\n  const videoIds = selectedVideos.map(v => v.videoId).join(',');\n  \n  return [{\n    json: {\n      videoIds: videoIds,\n      selectedVideos: selectedVideos\n    }\n  }];\n} catch (error) {\n  console.error('Error in Prepare Video Details Request:', error);\n  throw new Error(`Node Prepare Video Details Request failed: ${error.message}`);\n}"
       },
       "id": "efe216b3-0456-4302-96e9-ca2c06bdec98",
       "name": "Prepare Video Details Request",
@@ -87,7 +89,9 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "6b242d22-c1ef-49ea-aff7-2a59abd7bd72",
       "name": "Get Video Details",
@@ -115,7 +119,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract and clean the user input\nconst inputData = $input.first().json;\nconst userQuery = inputData.query || inputData.text || \"\";\n\n// Ensure userQuery is a string and clean it\nconst cleanQuery = String(userQuery).trim();\n\n// Only proceed if we have a valid query\nif (!cleanQuery) {\n  return [{\n    json: {\n      error: \"No query provided\",\n      message: \"Please provide a 'query' field in your request\"\n    }\n  }];\n}\n\n// Enhanced search term generation\nfunction generateSearchTerms(query) {\n  const lowerQuery = query.toLowerCase();\n  \n  // Parse the query to extract player and action\n  const playerNames = {\n    'lebron': 'LeBron James',\n    'steph': 'Stephen Curry',\n    'curry': 'Stephen Curry', \n    'kobe': 'Kobe Bryant',\n    'jordan': 'Michael Jordan',\n    'giannis': 'Giannis Antetokounmpo',\n    'durant': 'Kevin Durant',\n    'kawhi': 'Kawhi Leonard'\n  };\n  \n  const actions = {\n    'dunk': 'dunks compilation highlights',\n    'three': 'three pointers compilation highlights',\n    'fadeaway': 'fadeaway shots compilation highlights',\n    'crossover': 'crossover highlights compilation',\n    'block': 'blocks compilation highlights',\n    'steal': 'steals compilation highlights'\n  };\n  \n  let enhancedQuery = query;\n  let foundPlayer = null;\n  let foundAction = null;\n  \n  // Find player in query\n  for (const [key, fullName] of Object.entries(playerNames)) {\n    if (lowerQuery.includes(key)) {\n      foundPlayer = fullName;\n      break;\n    }\n  }\n  \n  // Find action in query\n  for (const [key, enhancement] of Object.entries(actions)) {\n    if (lowerQuery.includes(key)) {\n      foundAction = enhancement;\n      break;\n    }\n  }\n  \n  // Generate multiple search variations\n  const searchVariations = [];\n  \n  if (foundPlayer && foundAction) {\n    searchVariations.push(`\"${foundPlayer}\" ${foundAction}`);\n    searchVariations.push(`${foundPlayer} best ${foundAction}`);\n    searchVariations.push(`${foundPlayer} ${foundAction.split(' ')[0]} compilation`);\n  } else {\n    // Fallback to enhanced original query\n    searchVariations.push(`\"${cleanQuery}\" compilation highlights`);\n    searchVariations.push(`${cleanQuery} best highlights`);\n    searchVariations.push(`${cleanQuery} NBA compilation`);\n  }\n  \n  return searchVariations;\n}\n\nconst searchVariations = generateSearchTerms(cleanQuery);\n\n// Set search parameters\nconst searchConfig = {\n  query: cleanQuery,\n  searchVariations: searchVariations,\n  maxResults: 15, // Increased to get more options for filtering\n  videoDuration: \"medium\", // 4-20 minutes\n  videoDefinition: \"high\",\n  order: \"relevance\"\n};\n\nconsole.log(`Processing video compilation request: \"${cleanQuery}\"`);\nconsole.log(`Search variations: ${JSON.stringify(searchVariations)}`);\n\nreturn [{\n  json: {\n    originalQuery: cleanQuery,\n    searchConfig: searchConfig,\n    timestamp: new Date().toISOString()\n  }\n}];"
+        "jsCode": "try {\n    // Extract and clean the user input\n  const inputData = $input.first().json;\n  const userQuery = inputData.query || inputData.text || \"\";\n  \n  // Ensure userQuery is a string and clean it\n  const cleanQuery = String(userQuery).trim();\n  \n  // Only proceed if we have a valid query\n  if (!cleanQuery) {\n    return [{\n      json: {\n        error: \"No query provided\",\n        message: \"Please provide a 'query' field in your request\"\n      }\n    }];\n  }\n  \n  // Enhanced search term generation\n  function generateSearchTerms(query) {\n    const lowerQuery = query.toLowerCase();\n    \n    // Parse the query to extract player and action\n    const playerNames = {\n      'lebron': 'LeBron James',\n      'steph': 'Stephen Curry',\n      'curry': 'Stephen Curry', \n      'kobe': 'Kobe Bryant',\n      'jordan': 'Michael Jordan',\n      'giannis': 'Giannis Antetokounmpo',\n      'durant': 'Kevin Durant',\n      'kawhi': 'Kawhi Leonard'\n    };\n    \n    const actions = {\n      'dunk': 'dunks compilation highlights',\n      'three': 'three pointers compilation highlights',\n      'fadeaway': 'fadeaway shots compilation highlights',\n      'crossover': 'crossover highlights compilation',\n      'block': 'blocks compilation highlights',\n      'steal': 'steals compilation highlights'\n    };\n    \n    let enhancedQuery = query;\n    let foundPlayer = null;\n    let foundAction = null;\n    \n    // Find player in query\n    for (const [key, fullName] of Object.entries(playerNames)) {\n      if (lowerQuery.includes(key)) {\n        foundPlayer = fullName;\n        break;\n      }\n    }\n    \n    // Find action in query\n    for (const [key, enhancement] of Object.entries(actions)) {\n      if (lowerQuery.includes(key)) {\n        foundAction = enhancement;\n        break;\n      }\n    }\n    \n    // Generate multiple search variations\n    const searchVariations = [];\n    \n    if (foundPlayer && foundAction) {\n      searchVariations.push(`\"${foundPlayer}\" ${foundAction}`);\n      searchVariations.push(`${foundPlayer} best ${foundAction}`);\n      searchVariations.push(`${foundPlayer} ${foundAction.split(' ')[0]} compilation`);\n    } else {\n      // Fallback to enhanced original query\n      searchVariations.push(`\"${cleanQuery}\" compilation highlights`);\n      searchVariations.push(`${cleanQuery} best highlights`);\n      searchVariations.push(`${cleanQuery} NBA compilation`);\n    }\n    \n    return searchVariations;\n  }\n  \n  const searchVariations = generateSearchTerms(cleanQuery);\n  \n  // Set search parameters\n  const searchConfig = {\n    query: cleanQuery,\n    searchVariations: searchVariations,\n    maxResults: 15, // Increased to get more options for filtering\n    videoDuration: \"medium\", // 4-20 minutes\n    videoDefinition: \"high\",\n    order: \"relevance\"\n  };\n  \n  console.log(`Processing video compilation request: \"${cleanQuery}\"`);\n  console.log(`Search variations: ${JSON.stringify(searchVariations)}`);\n  \n  return [{\n    json: {\n      originalQuery: cleanQuery,\n      searchConfig: searchConfig,\n      timestamp: new Date().toISOString()\n    }\n  }];\n} catch (error) {\n  console.error('Error in Enhanced Input Processing1:', error);\n  throw new Error(`Node Enhanced Input Processing1 failed: ${error.message}`);\n}"
       },
       "id": "9ef75112-e5a8-4f44-accc-a8c77beefba4",
       "name": "Enhanced Input Processing1",
@@ -166,7 +170,9 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "7411ebe0-0583-43bd-9c04-a8c207e3c9a0",
       "name": "YouTube Search (Primary)1",
@@ -217,7 +223,9 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "75e426f1-ab6a-49a0-ad60-34650b2bb02e",
       "name": "YouTube Search (Secondary)1",
@@ -269,7 +277,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Generate download commands for yt-dlp\nconst compilationPlan = $input.first().json.compilationPlan;\nconst query = $input.first().json.query;\n\n// Create download commands for each video\nconst downloadCommands = compilationPlan.videos.map((video, index) => {\n  const startTime = video.suggestedStartTime;\n  const duration = video.suggestedClipLength;\n  const outputFile = `clip_${index + 1}_${video.videoId}.mp4`;\n  \n  // Enhanced yt-dlp command with better quality settings\n  const command = `yt-dlp --external-downloader ffmpeg --external-downloader-args \"ffmpeg_i:-ss ${startTime} -t ${duration}\" -f \"best[height<=720][ext=mp4]\" -o \"${outputFile}\" \"${video.youtubeUrl}\"`;\n  \n  return {\n    index: index + 1,\n    videoId: video.videoId,\n    title: video.title,\n    channelTitle: video.channelTitle,\n    aiScore: video.aiScore,\n    aiReasoning: video.aiReasoning,\n    command: command,\n    outputFile: outputFile,\n    startTime: startTime,\n    duration: duration,\n    combinedScore: video.combinedScore\n  };\n});\n\n// Create FFmpeg concatenation command with better transitions\nconst inputList = downloadCommands.map(cmd => `file '${cmd.outputFile}'`).join('\\n');\nconst safeQuery = query.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');\nconst finalOutput = `${safeQuery}_compilation.mp4`;\n\nconst concatCommand = `echo \"${inputList}\" > filelist.txt && ffmpeg -f concat -safe 0 -i filelist.txt -c copy \"${finalOutput}\"`;\n\nreturn [{\n  json: {\n    query: query,\n    downloadCommands: downloadCommands,\n    concatCommand: concatCommand,\n    finalOutput: finalOutput,\n    totalClips: downloadCommands.length,\n    estimatedDuration: compilationPlan.estimatedLength,\n    qualityInfo: {\n      aiAnalyzed: true,\n      channelFiltered: true,\n      durationFiltered: true,\n      averageAiScore: downloadCommands.reduce((sum, cmd) => sum + cmd.aiScore, 0) / downloadCommands.length\n    },\n    instructions: {\n      step1: \"Run each download command to get video clips\",\n      step2: \"Run concat command to stitch clips together\", \n      step3: \"Final video will be saved as: \" + finalOutput,\n      note: \"These clips have been AI-verified for content relevance\"\n    }\n  }\n}];"
+        "jsCode": "try {\n    // Generate download commands for yt-dlp\n  const compilationPlan = $input.first().json.compilationPlan;\n  const query = $input.first().json.query;\n  \n  // Create download commands for each video\n  const downloadCommands = compilationPlan.videos.map((video, index) => {\n    const startTime = video.suggestedStartTime;\n    const duration = video.suggestedClipLength;\n    const outputFile = `clip_${index + 1}_${video.videoId}.mp4`;\n    \n    // Enhanced yt-dlp command with better quality settings\n    const command = `yt-dlp --external-downloader ffmpeg --external-downloader-args \"ffmpeg_i:-ss ${startTime} -t ${duration}\" -f \"best[height<=720][ext=mp4]\" -o \"${outputFile}\" \"${video.youtubeUrl}\"`;\n    \n    return {\n      index: index + 1,\n      videoId: video.videoId,\n      title: video.title,\n      channelTitle: video.channelTitle,\n      aiScore: video.aiScore,\n      aiReasoning: video.aiReasoning,\n      command: command,\n      outputFile: outputFile,\n      startTime: startTime,\n      duration: duration,\n      combinedScore: video.combinedScore\n    };\n  });\n  \n  // Create FFmpeg concatenation command with better transitions\n  const inputList = downloadCommands.map(cmd => `file '${cmd.outputFile}'`).join('\\n');\n  const safeQuery = query.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');\n  const finalOutput = `${safeQuery}_compilation.mp4`;\n  \n  const concatCommand = `echo \"${inputList}\" > filelist.txt && ffmpeg -f concat -safe 0 -i filelist.txt -c copy \"${finalOutput}\"`;\n  \n  return [{\n    json: {\n      query: query,\n      downloadCommands: downloadCommands,\n      concatCommand: concatCommand,\n      finalOutput: finalOutput,\n      totalClips: downloadCommands.length,\n      estimatedDuration: compilationPlan.estimatedLength,\n      qualityInfo: {\n        aiAnalyzed: true,\n        channelFiltered: true,\n        durationFiltered: true,\n        averageAiScore: downloadCommands.reduce((sum, cmd) => sum + cmd.aiScore, 0) / downloadCommands.length\n      },\n      instructions: {\n        step1: \"Run each download command to get video clips\",\n        step2: \"Run concat command to stitch clips together\", \n        step3: \"Final video will be saved as: \" + finalOutput,\n        note: \"These clips have been AI-verified for content relevance\"\n      }\n    }\n  }];\n} catch (error) {\n  console.error('Error in Generate Enhanced Download Commands1:', error);\n  throw new Error(`Node Generate Enhanced Download Commands1 failed: ${error.message}`);\n}"
       },
       "id": "2b9bcf0b-2568-49b3-ae54-c98437d12732",
       "name": "Generate Enhanced Download Commands1",
@@ -279,130 +287,168 @@
         1040,
         880
       ]
+    },
+    {
+      "id": "node_43uw4y0dr",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        1460,
+        1080
+      ],
+      "parameters": {},
+      "continueOnFail": false
+    },
+    {
+      "id": "node_fkn931mol",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1660,
+        1080
+      ],
+      "parameters": {
+        "options": {},
+        "responseBody": "{\"success\":false,\"error\":\"An error occurred processing your request\",\"message\":\"{{ $json.error.message }}\"}",
+        "responseCode": 500
+      }
     }
   ],
   "pinData": {},
   "connections": {
-    "AI Content Analysis": {
+    "04a19401-3828-4c2b-a443-342ee66930d1": {
       "main": [
         [
           {
-            "node": "Process AI Results1",
+            "node": "7be902c4-18ba-49ec-9e00-21af9952d936",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Video Request Webhook": {
+    "ad54512b-4f71-43f5-a0d1-d3697f11f6e5": {
       "main": [
         [
           {
-            "node": "Enhanced Input Processing1",
+            "node": "9ef75112-e5a8-4f44-accc-a8c77beefba4",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Prepare Video Details Request": {
+    "efe216b3-0456-4302-96e9-ca2c06bdec98": {
       "main": [
         [
           {
-            "node": "Get Video Details",
+            "node": "6b242d22-c1ef-49ea-aff7-2a59abd7bd72",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get Video Details": {
+    "6b242d22-c1ef-49ea-aff7-2a59abd7bd72": {
       "main": [
         [
           {
-            "node": "Create Enhanced Compilation Plan1",
+            "node": "54bfa18f-8e3b-4829-af10-9eeeb13f9cda",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Enhanced Input Processing1": {
+    "9ef75112-e5a8-4f44-accc-a8c77beefba4": {
       "main": [
         [
           {
-            "node": "YouTube Search (Primary)1",
+            "node": "7411ebe0-0583-43bd-9c04-a8c207e3c9a0",
             "type": "main",
             "index": 0
           },
           {
-            "node": "YouTube Search (Secondary)1",
+            "node": "75e426f1-ab6a-49a0-ad60-34650b2bb02e",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "YouTube Search (Primary)1": {
+    "7411ebe0-0583-43bd-9c04-a8c207e3c9a0": {
       "main": [
         [
           {
-            "node": "Combine & Filter Results1",
+            "node": "1439efbc-54ee-4ae9-8f95-d030253be797",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "YouTube Search (Secondary)1": {
+    "75e426f1-ab6a-49a0-ad60-34650b2bb02e": {
       "main": [
         [
           {
-            "node": "Combine & Filter Results1",
+            "node": "1439efbc-54ee-4ae9-8f95-d030253be797",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Combine & Filter Results1": {
+    "1439efbc-54ee-4ae9-8f95-d030253be797": {
       "main": [
         [
           {
-            "node": "AI Content Analysis",
+            "node": "04a19401-3828-4c2b-a443-342ee66930d1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Process AI Results1": {
+    "7be902c4-18ba-49ec-9e00-21af9952d936": {
       "main": [
         [
           {
-            "node": "Prepare Video Details Request",
+            "node": "efe216b3-0456-4302-96e9-ca2c06bdec98",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Create Enhanced Compilation Plan1": {
+    "54bfa18f-8e3b-4829-af10-9eeeb13f9cda": {
       "main": [
         [
           {
-            "node": "Generate Enhanced Download Commands1",
+            "node": "2b9bcf0b-2568-49b3-ae54-c98437d12732",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Generate Enhanced Download Commands1": {
+    "2b9bcf0b-2568-49b3-ae54-c98437d12732": {
       "main": [
         [
           {
-            "node": "Send Response",
+            "node": "e44681eb-55ae-416a-8434-f6542bec1db7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "node_43uw4y0dr": {
+      "main": [
+        [
+          {
+            "node": "node_fkn931mol",
             "type": "main",
             "index": 0
           }
@@ -420,5 +466,6 @@
     "instanceId": "88919e0d57b3217fce6e5807497b5f525e58dd9749546b32d18c9810d0ba13b1"
   },
   "id": "FzoZjKPRAe3y8lXc",
-  "tags": []
+  "tags": [],
+  "staticData": {}
 }

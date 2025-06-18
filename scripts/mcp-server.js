@@ -77,7 +77,7 @@ class VideoCompilationMCPServer {
       const optimizedQuery = await this.enhanceQuery(query);
       
       // Execute the enhanced video compilation workflow
-      const webhookUrl = 'http://localhost:5678/webhook-test/compile-video';
+      const webhookUrl = `${this.n8nBaseUrl.replace('/api', '')}/webhook/compile-video`;
       const response = await axios.post(webhookUrl, {
         query: optimizedQuery,
         max_clips,

@@ -1,0 +1,94 @@
+# Cursor Rules for n8n Workflow & MCP Server Development
+
+## Package Management
+- Always use `bun` instead of `npm` or `yarn`
+- Use `bun add` for installing packages
+- Use `bun run` for executing scripts
+
+## n8n Workflow Development
+- When creating n8n workflows, always include proper error handling nodes
+- Use descriptive node names that clearly indicate their purpose
+- Include webhook endpoints with meaningful paths (e.g., `/webhook/process-claim`, `/webhook/compile-video`)
+- Always set up proper response nodes for webhooks
+- Use environment variables for API keys and sensitive data
+- Include proper JSON validation in webhook receivers
+
+## API Development Patterns
+- Always include proper error handling with try-catch blocks
+- Use descriptive variable names for API responses and data processing
+- Include request/response logging for debugging
+- Validate API responses before processing
+- Use proper HTTP status codes and error messages
+- Include timeout handling for external API calls
+
+## MCP Server Integration
+- When working with MCP servers, always test connection before proceeding
+- Use proper authentication headers (X-N8N-API-KEY format)
+- Include fallback mechanisms for failed API calls
+- Test with multiple endpoints when API structure is unknown
+- Always validate MCP function parameters before calling
+- Include proper error messaging for MCP tool failures
+
+## Workflow Import/Export
+- When importing workflows, remove read-only fields (active, tags, etc.)
+- Use the `/api/v1/workflows` endpoint for n8n operations
+- Always check workflow validation before importing
+- Include proper node connections and settings
+- Test workflows after import to ensure functionality
+
+## JavaScript/Node.js Best Practices
+- Use modern async/await syntax instead of callbacks
+- Include proper error boundaries and exception handling
+- Use descriptive function names that indicate their purpose
+- Include JSDoc comments for complex functions
+- Use template literals for string formatting
+- Implement proper data validation and sanitization
+
+## File Organization
+- Keep configuration files in the root directory
+- Use descriptive filenames (e.g., `import-workflows.js`, `test-mcp-server.js`)
+- Separate concerns into different files
+- Include proper file headers with purpose descriptions
+- Use consistent naming conventions across files
+
+## Testing & Debugging
+- Always include console.log statements for debugging complex operations
+- Test API endpoints with curl commands before scripting
+- Validate environment variables before using them
+- Include status reporting in long-running operations
+- Test error scenarios, not just happy paths
+
+## Documentation
+- Include inline comments for complex logic
+- Document API endpoints and their expected parameters
+- Include example usage in script headers
+- Document environment variable requirements
+- Include troubleshooting notes for common issues
+
+## Security Practices
+- Never hardcode API keys or sensitive data
+- Use environment variables for all credentials
+- Validate and sanitize all user inputs
+- Include proper authentication checks
+- Use HTTPS for all external API calls
+
+## Automation Scripts
+- Include progress indicators for long-running operations
+- Provide clear success/failure messaging
+- Include rollback mechanisms where appropriate
+- Test scripts with edge cases and error conditions
+- Include proper argument validation
+
+## Workflow Design Patterns
+- Use conditional logic nodes for decision branching
+- Include proper data transformation between nodes
+- Use meaningful variable names in expressions
+- Include proper error handling paths
+- Design for reusability and modularity
+
+## Development Workflow
+- Test locally before deploying
+- Use version control for all configuration files
+- Include proper backup mechanisms
+- Document setup and deployment procedures
+- Test integration points thoroughly 

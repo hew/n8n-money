@@ -1,0 +1,62 @@
+{
+    "mcpServers": {
+        "n8n-video-compilation": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@dopehunter/n8n-mcp-server"
+            ],
+            "env": {
+                "N8N_BASE_URL": "http://localhost:5678",
+                "N8N_API_KEY": "${N8N_API_KEY}"
+            }
+        }
+    },
+    "tools": {
+        "video_compilation": {
+            "description": "AI-powered video compilation workflow management",
+            "capabilities": [
+                "Execute video compilation workflows",
+                "Monitor compilation progress",
+                "Optimize search parameters",
+                "Manage workflow quality settings",
+                "Handle batch processing"
+            ]
+        }
+    },
+    "workflows": {
+        "enhanced_video_compilation": {
+            "id": "enhanced-video-compilation",
+            "name": "Enhanced Video Compilation Workflow",
+            "description": "AI-enhanced video compilation with smart search, channel filtering, and quality analysis",
+            "webhook_path": "/webhook/compile-video",
+            "parameters": {
+                "query": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Search query for video compilation (e.g., 'LeBron dunking')"
+                },
+                "max_clips": {
+                    "type": "number",
+                    "default": 5,
+                    "description": "Maximum number of clips in compilation"
+                },
+                "quality_threshold": {
+                    "type": "number",
+                    "default": 7,
+                    "description": "AI quality score threshold (1-10)"
+                },
+                "duration_preference": {
+                    "type": "string",
+                    "enum": [
+                        "short",
+                        "medium",
+                        "long"
+                    ],
+                    "default": "medium",
+                    "description": "Preferred clip duration"
+                }
+            }
+        }
+    }
+}

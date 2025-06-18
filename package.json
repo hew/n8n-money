@@ -1,0 +1,38 @@
+{
+  "name": "n8n-video-compilation",
+  "version": "1.0.0",
+  "description": "AI-powered video compilation workflows with n8n and MCP integration",
+  "main": "scripts/mcp-server.js",
+  "scripts": {
+    "start": "node scripts/mcp-server.js",
+    "start:mcp": "node scripts/mcp-server.js",
+    "test:mcp": "node scripts/test-mcp-server.js",
+    "test:compilation": "./scripts/start-mcp-demo.sh",
+    "dev": "nodemon scripts/mcp-server.js",
+    "import-workflows": "node scripts/import-workflows.js"
+  },
+  "keywords": [
+    "n8n",
+    "video",
+    "compilation",
+    "ai",
+    "mcp",
+    "youtube",
+    "automation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@dopehunter/n8n-mcp-server": "^0.1.0",
+    "@modelcontextprotocol/sdk": "^1.12.3",
+    "axios": "^1.10.0",
+    "node-fetch": "^3.3.2",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "bin": {
+    "video-compilation-mcp": "./scripts/mcp-server.js"
+  }
+}

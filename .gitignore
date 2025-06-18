@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+bun.lock
+
+# Environment variables (sensitive)
+.env
+.env.local
+.env.production
+
+# IDE files
+.vscode/
+.cursor/
+.DS_Store
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Temporary folders
+tmp/
+temp/
+
+# OS generated files
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+
+# Local configuration overrides
+config/local.json
+config/development.json
+config/production.json
+
+# Sensitive workflow data (if any)
+*.secret.json
+
+# Test outputs
+test-results/ 

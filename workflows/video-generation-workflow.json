@@ -1,0 +1,424 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a video content analyzer. Your job is to determine if YouTube video titles and descriptions actually contain the specific content requested by the user. You must be strict and only approve videos that clearly match the user's request.\n\nFor each video, analyze:\n1. Does the title clearly indicate it contains the requested content?\n2. Does the description support this?\n3. Is this likely to be actual highlight footage vs. commentary/reaction?\n\nRespond with a JSON array where each object has:\n- videoId: string\n- relevanceScore: number (1-10, where 10 = perfect match)\n- reasoning: string (brief explanation)\n- approved: boolean (true if score >= 7)\n\nUser is looking for: \"{{ $('Combine & Filter Results').first().json.query }}\"\n\nAnalyze these video candidates:\n\n{{ $('Combine & Filter Results').first().json.candidates.map((v, i) => `${i+1}. Video ID: ${v.videoId}\n   Title: ${v.title}\n   Channel: ${v.channelTitle}\n   Description: ${v.description.substring(0, 200)}...`).join('\\n\\n') }}",
+              "role": "system"
+            },
+            {
+              "content": "=User is looking for: \"{{ $('Combine & Filter Results').first().json.query }}\"\n\nAnalyze these video candidates:\n\n{{ $('Combine & Filter Results').first().json.candidates.map((v, i) => `${i+1}. Video ID: ${v.videoId}\n   Title: ${v.title}\n   Channel: ${v.channelTitle}\n   Description: ${v.description.substring(0, 200)}...`).join('\\n\\n') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "04a19401-3828-4c2b-a443-342ee66930d1",
+      "name": "AI Content Analysis",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.3,
+      "position": [
+        -140,
+        860
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "qdJqADJXGpXxVnBn",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "compile-video",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ad54512b-4f71-43f5-a0d1-d3697f11f6e5",
+      "name": "Video Request Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -940,
+        880
+      ],
+      "webhookId": "compile-video-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get video details for selected videos\nconst selectedVideos = $input.first().json.selectedVideos;\n\n// Create requests for video details (duration, statistics, etc.)\nconst videoIds = selectedVideos.map(v => v.videoId).join(',');\n\nreturn [{\n  json: {\n    videoIds: videoIds,\n    selectedVideos: selectedVideos\n  }\n}];"
+      },
+      "id": "efe216b3-0456-4302-96e9-ca2c06bdec98",
+      "name": "Prepare Video Details Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/videos",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "contentDetails,statistics"
+            },
+            {
+              "name": "id",
+              "value": "={{ $json.videoIds }}"
+            },
+            {
+              "name": "key",
+              "value": "AIzaSyDvMr42Pg97RPksm_jNMORO4LHUAolkGyE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6b242d22-c1ef-49ea-aff7-2a59abd7bd72",
+      "name": "Get Video Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        600,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "e44681eb-55ae-416a-8434-f6542bec1db7",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1260,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and clean the user input\nconst inputData = $input.first().json;\nconst userQuery = inputData.query || inputData.text || \"\";\n\n// Ensure userQuery is a string and clean it\nconst cleanQuery = String(userQuery).trim();\n\n// Only proceed if we have a valid query\nif (!cleanQuery) {\n  return [{\n    json: {\n      error: \"No query provided\",\n      message: \"Please provide a 'query' field in your request\"\n    }\n  }];\n}\n\n// Enhanced search term generation\nfunction generateSearchTerms(query) {\n  const lowerQuery = query.toLowerCase();\n  \n  // Parse the query to extract player and action\n  const playerNames = {\n    'lebron': 'LeBron James',\n    'steph': 'Stephen Curry',\n    'curry': 'Stephen Curry', \n    'kobe': 'Kobe Bryant',\n    'jordan': 'Michael Jordan',\n    'giannis': 'Giannis Antetokounmpo',\n    'durant': 'Kevin Durant',\n    'kawhi': 'Kawhi Leonard'\n  };\n  \n  const actions = {\n    'dunk': 'dunks compilation highlights',\n    'three': 'three pointers compilation highlights',\n    'fadeaway': 'fadeaway shots compilation highlights',\n    'crossover': 'crossover highlights compilation',\n    'block': 'blocks compilation highlights',\n    'steal': 'steals compilation highlights'\n  };\n  \n  let enhancedQuery = query;\n  let foundPlayer = null;\n  let foundAction = null;\n  \n  // Find player in query\n  for (const [key, fullName] of Object.entries(playerNames)) {\n    if (lowerQuery.includes(key)) {\n      foundPlayer = fullName;\n      break;\n    }\n  }\n  \n  // Find action in query\n  for (const [key, enhancement] of Object.entries(actions)) {\n    if (lowerQuery.includes(key)) {\n      foundAction = enhancement;\n      break;\n    }\n  }\n  \n  // Generate multiple search variations\n  const searchVariations = [];\n  \n  if (foundPlayer && foundAction) {\n    searchVariations.push(`\"${foundPlayer}\" ${foundAction}`);\n    searchVariations.push(`${foundPlayer} best ${foundAction}`);\n    searchVariations.push(`${foundPlayer} ${foundAction.split(' ')[0]} compilation`);\n  } else {\n    // Fallback to enhanced original query\n    searchVariations.push(`\"${cleanQuery}\" compilation highlights`);\n    searchVariations.push(`${cleanQuery} best highlights`);\n    searchVariations.push(`${cleanQuery} NBA compilation`);\n  }\n  \n  return searchVariations;\n}\n\nconst searchVariations = generateSearchTerms(cleanQuery);\n\n// Set search parameters\nconst searchConfig = {\n  query: cleanQuery,\n  searchVariations: searchVariations,\n  maxResults: 15, // Increased to get more options for filtering\n  videoDuration: \"medium\", // 4-20 minutes\n  videoDefinition: \"high\",\n  order: \"relevance\"\n};\n\nconsole.log(`Processing video compilation request: \"${cleanQuery}\"`);\nconsole.log(`Search variations: ${JSON.stringify(searchVariations)}`);\n\nreturn [{\n  json: {\n    originalQuery: cleanQuery,\n    searchConfig: searchConfig,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "9ef75112-e5a8-4f44-accc-a8c77beefba4",
+      "name": "Enhanced Input Processing1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet"
+            },
+            {
+              "name": "q",
+              "value": "={{ $json.searchConfig.searchVariations[0] }}"
+            },
+            {
+              "name": "type",
+              "value": "video"
+            },
+            {
+              "name": "maxResults",
+              "value": "={{ $json.searchConfig.maxResults }}"
+            },
+            {
+              "name": "order",
+              "value": "={{ $json.searchConfig.order }}"
+            },
+            {
+              "name": "videoDuration",
+              "value": "={{ $json.searchConfig.videoDuration }}"
+            },
+            {
+              "name": "videoDefinition",
+              "value": "={{ $json.searchConfig.videoDefinition }}"
+            },
+            {
+              "name": "key",
+              "value": "AIzaSyDvMr42Pg97RPksm_jNMORO4LHUAolkGyE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7411ebe0-0583-43bd-9c04-a8c207e3c9a0",
+      "name": "YouTube Search (Primary)1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -500,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet"
+            },
+            {
+              "name": "q",
+              "value": "={{ $('Enhanced Input Processing1').first().json.searchConfig.searchVariations[1] }}"
+            },
+            {
+              "name": "type",
+              "value": "video"
+            },
+            {
+              "name": "maxResults",
+              "value": "10"
+            },
+            {
+              "name": "order",
+              "value": "relevance"
+            },
+            {
+              "name": "videoDuration",
+              "value": "medium"
+            },
+            {
+              "name": "videoDefinition",
+              "value": "high"
+            },
+            {
+              "name": "key",
+              "value": "AIzaSyDvMr42Pg97RPksm_jNMORO4LHUAolkGyE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "75e426f1-ab6a-49a0-ad60-34650b2bb02e",
+      "name": "YouTube Search (Secondary)1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -500,
+        980
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine results from multiple searches\nconst allInputs = $input.all();\nlet primaryResults = null;\nlet secondaryResults = null;\nlet originalQuery = \"\";\n\n// Find the results from different sources\nfor (const input of allInputs) {\n  if (input.json && input.json.items) {\n    if (!primaryResults) {\n      primaryResults = input.json;\n    } else {\n      secondaryResults = input.json;\n    }\n  }\n}\n\n// Get original query from the first available input that has it\nfor (const input of allInputs) {\n  if (input.json && input.json.originalQuery) {\n    originalQuery = input.json.originalQuery;\n    break;\n  }\n}\n\n// Fallback: try to get query from workflow context\nif (!originalQuery) {\n  try {\n    originalQuery = $node[\"Enhanced Input Processing1\"].json.originalQuery || \"\";\n  } catch (e) {\n    originalQuery = \"video compilation\";\n  }\n}\n\nlet allVideos = [];\n\n// Add primary results\nif (primaryResults.items) {\n  allVideos = allVideos.concat(primaryResults.items.map(item => ({...item, source: 'primary'})));\n}\n\n// Add secondary results\nif (secondaryResults.items) {\n  allVideos = allVideos.concat(secondaryResults.items.map(item => ({...item, source: 'secondary'})));\n}\n\n// Remove duplicates based on video ID\nconst uniqueVideos = [];\nconst seenIds = new Set();\n\nfor (const video of allVideos) {\n  if (!seenIds.has(video.id.videoId)) {\n    seenIds.add(video.id.videoId);\n    uniqueVideos.push(video);\n  }\n}\n\nif (uniqueVideos.length === 0) {\n  return [{\n    json: {\n      error: \"No videos found\",\n      query: originalQuery,\n      results: []\n    }\n  }];\n}\n\n// Enhanced filtering and scoring\nconst trustedChannels = [\n  'NBA', 'ESPN', 'Bleacher Report', 'House of Highlights', \n  'NBA on TNT', 'FreeDawkins', 'GD Factory', 'CliveNBAParody',\n  'NBA Conference', 'Dawkins', 'MLG Highlights', 'Ximo Pierto',\n  'Chris Smoove', 'NBA TV', 'Basketball Forever', 'Swish Cultures'\n];\n\nconst processedVideos = uniqueVideos.map((video, index) => {\n  const snippet = video.snippet;\n  const videoId = video.id.videoId;\n  \n  // Calculate relevance score\n  const title = snippet.title.toLowerCase();\n  const description = snippet.description.toLowerCase();\n  const channelTitle = snippet.channelTitle;\n  const queryLower = originalQuery.toLowerCase();\n  \n  let relevanceScore = 0;\n  \n  // Exact query match in title (high priority)\n  if (title.includes(queryLower)) {\n    relevanceScore += 100;\n  }\n  \n  // Individual keyword matching\n  const keywords = queryLower.split(' ');\n  keywords.forEach(keyword => {\n    if (title.includes(keyword)) relevanceScore += 15;\n    if (description.includes(keyword)) relevanceScore += 8;\n  });\n  \n  // Channel trust score\n  const isOfficialChannel = trustedChannels.some(trusted => \n    channelTitle.toLowerCase().includes(trusted.toLowerCase())\n  );\n  if (isOfficialChannel) {\n    relevanceScore += 50;\n  }\n  \n  // Compilation/highlight keywords\n  const compilationKeywords = ['compilation', 'highlights', 'best', 'top', 'greatest', 'all time'];\n  compilationKeywords.forEach(keyword => {\n    if (title.includes(keyword)) relevanceScore += 20;\n  });\n  \n  // Recency bonus\n  const publishDate = new Date(snippet.publishedAt);\n  const daysSincePublish = (Date.now() - publishDate.getTime()) / (1000 * 60 * 60 * 24);\n  if (daysSincePublish < 30) relevanceScore += 15;\n  if (daysSincePublish < 7) relevanceScore += 25;\n  \n  // Primary search bonus\n  if (video.source === 'primary') {\n    relevanceScore += 10;\n  }\n  \n  return {\n    videoId: videoId,\n    title: snippet.title,\n    description: snippet.description,\n    thumbnail: snippet.thumbnails.high?.url || snippet.thumbnails.default.url,\n    channelTitle: snippet.channelTitle,\n    publishedAt: snippet.publishedAt,\n    youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,\n    relevanceScore: relevanceScore,\n    rank: index + 1,\n    isOfficialChannel: isOfficialChannel,\n    source: video.source\n  };\n});\n\n// Sort by relevance score\nprocessedVideos.sort((a, b) => b.relevanceScore - a.relevanceScore);\n\n// Take top candidates for AI analysis\nconst topCandidates = processedVideos.slice(0, 10);\n\nconsole.log(`Found ${uniqueVideos.length} unique videos, selected top ${topCandidates.length} for AI analysis`);\n\nreturn [{\n  json: {\n    query: originalQuery,\n    totalFound: uniqueVideos.length,\n    candidateCount: topCandidates.length,\n    candidates: topCandidates,\n    searchTimestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "1439efbc-54ee-4ae9-8f95-d030253be797",
+      "name": "Combine & Filter Results1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process AI analysis results and select final videos\nconst aiResponse = $input.first().json;\n\n// Get candidates from the previous node data\nlet candidates = [];\nlet originalQuery = \"\";\n\n// Try to get data from node context or previous execution\ntry {\n  // Check if we have the data in the current execution context\n  const prevNodeData = $node[\"Combine & Filter Results1\"];\n  if (prevNodeData && prevNodeData.json) {\n    candidates = prevNodeData.json.candidates || [];\n    originalQuery = prevNodeData.json.query || \"\";\n  }\n} catch (e) {\n  // Fallback: try to extract from AI response or use defaults\n  console.log('Could not access previous node data, using fallback');\n  candidates = [];\n  originalQuery = \"video compilation\";\n}\n\nlet aiAnalysis = [];\ntry {\n  // Parse AI response\n  const content = aiResponse.choices[0].message.content;\n  aiAnalysis = JSON.parse(content);\n} catch (error) {\n  console.log('AI analysis parsing failed, falling back to original scoring');\n  // Fallback to original scoring if AI fails\n  aiAnalysis = candidates.slice(0, 5).map(v => ({\n    videoId: v.videoId,\n    relevanceScore: Math.min(10, v.relevanceScore / 10),\n    reasoning: 'Fallback scoring due to AI parsing error',\n    approved: v.relevanceScore > 50\n  }));\n}\n\n// Combine AI analysis with original candidate data\nconst enhancedVideos = candidates.map(candidate => {\n  const aiResult = aiAnalysis.find(ai => ai.videoId === candidate.videoId);\n  \n  if (aiResult) {\n    return {\n      ...candidate,\n      aiScore: aiResult.relevanceScore,\n      aiReasoning: aiResult.reasoning,\n      aiApproved: aiResult.approved,\n      finalScore: (candidate.relevanceScore * 0.6) + (aiResult.relevanceScore * 40) // Weighted combination\n    };\n  } else {\n    return {\n      ...candidate,\n      aiScore: 5,\n      aiReasoning: 'No AI analysis available',\n      aiApproved: candidate.relevanceScore > 50,\n      finalScore: candidate.relevanceScore\n    };\n  }\n});\n\n// Filter for AI-approved videos and sort by final score\nconst approvedVideos = enhancedVideos\n  .filter(video => video.aiApproved && video.aiScore >= 7)\n  .sort((a, b) => b.finalScore - a.finalScore);\n\n// If we don't have enough approved videos, take the best scoring ones\nconst selectedVideos = approvedVideos.length >= 3 \n  ? approvedVideos.slice(0, 5)\n  : enhancedVideos.sort((a, b) => b.finalScore - a.finalScore).slice(0, 5);\n\nconsole.log(`AI approved ${approvedVideos.length} videos, selected ${selectedVideos.length} for compilation`);\n\nreturn [{\n  json: {\n    query: originalQuery,\n    totalCandidates: candidates.length,\n    aiApproved: approvedVideos.length,\n    selectedCount: selectedVideos.length,\n    selectedVideos: selectedVideos,\n    aiAnalysis: aiAnalysis,\n    searchTimestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "7be902c4-18ba-49ec-9e00-21af9952d936",
+      "name": "Process AI Results1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enhanced video processing with duration filtering\nconst videoDetails = $input.first().json;\n\n// Get selected videos from previous node context\nlet selectedVideos = [];\ntry {\n  const prevNodeData = $node[\"Prepare Video Details Request\"];\n  if (prevNodeData && prevNodeData.json && prevNodeData.json.selectedVideos) {\n    selectedVideos = prevNodeData.json.selectedVideos;\n  }\n} catch (e) {\n  console.log('Could not access previous node data for selected videos');\n  selectedVideos = [];\n}\n\n// Create a map of video details\nconst detailsMap = {};\nif (videoDetails.items) {\n  videoDetails.items.forEach(item => {\n    detailsMap[item.id] = {\n      duration: item.contentDetails.duration,\n      viewCount: item.statistics.viewCount,\n      likeCount: item.statistics.likeCount\n    };\n  });\n}\n\n// Get query from previous node\nlet query = \"video compilation\";\ntry {\n  const processAIData = $node[\"Process AI Results1\"];\n  if (processAIData && processAIData.json && processAIData.json.query) {\n    query = processAIData.json.query;\n  }\n} catch (e) {\n  console.log('Could not access query from Process AI Results');\n}\n\n// Enhance selected videos with details and apply duration filtering\nconst enhancedVideos = selectedVideos.map(video => {\n  const details = detailsMap[video.videoId] || {};\n  \n  // Parse duration (PT4M13S format)\n  let durationSeconds = 0;\n  if (details.duration) {\n    const match = details.duration.match(/PT(?:(\\d+)H)?(?:(\\d+)M)?(?:(\\d+)S)?/);\n    if (match) {\n      const hours = parseInt(match[1]) || 0;\n      const minutes = parseInt(match[2]) || 0;\n      const seconds = parseInt(match[3]) || 0;\n      durationSeconds = hours * 3600 + minutes * 60 + seconds;\n    }\n  }\n  \n  // Duration-based scoring\n  let durationScore = 0;\n  if (durationSeconds >= 120 && durationSeconds <= 900) { // 2-15 minutes ideal\n    durationScore = 10;\n  } else if (durationSeconds >= 60 && durationSeconds <= 1800) { // 1-30 minutes acceptable\n    durationScore = 5;\n  }\n  \n  return {\n    ...video,\n    duration: details.duration,\n    durationSeconds: durationSeconds,\n    durationScore: durationScore,\n    viewCount: parseInt(details.viewCount) || 0,\n    likeCount: parseInt(details.likeCount) || 0,\n    // Smart clip timing based on video length\n    suggestedStartTime: Math.max(10, Math.floor(durationSeconds * 0.25)), // Start after intro\n    suggestedEndTime: Math.min(durationSeconds - 10, Math.floor(durationSeconds * 0.75)), // End before outro\n    suggestedClipLength: Math.min(45, Math.max(20, Math.floor(durationSeconds * 0.3))) // 20-45 seconds\n  };\n});\n\n// Filter videos with good duration and sort by combined score\nconst validVideos = enhancedVideos\n  .filter(video => video.durationSeconds >= 60) // At least 1 minute\n  .map(video => ({\n    ...video,\n    combinedScore: video.finalScore + (video.durationScore * 5) + (Math.log10(video.viewCount || 1) * 2)\n  }))\n  .sort((a, b) => b.combinedScore - a.combinedScore)\n  .slice(0, 5); // Take top 5\n\nconsole.log(`Enhanced ${enhancedVideos.length} videos, ${validVideos.length} valid for clipping`);\n\nreturn [{\n  json: {\n    query: query,\n    compilationPlan: {\n      totalVideos: validVideos.length,\n      estimatedLength: validVideos.reduce((sum, v) => sum + v.suggestedClipLength, 0),\n      videos: validVideos\n    },\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "54bfa18f-8e3b-4829-af10-9eeeb13f9cda",
+      "name": "Create Enhanced Compilation Plan1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate download commands for yt-dlp\nconst compilationPlan = $input.first().json.compilationPlan;\nconst query = $input.first().json.query;\n\n// Create download commands for each video\nconst downloadCommands = compilationPlan.videos.map((video, index) => {\n  const startTime = video.suggestedStartTime;\n  const duration = video.suggestedClipLength;\n  const outputFile = `clip_${index + 1}_${video.videoId}.mp4`;\n  \n  // Enhanced yt-dlp command with better quality settings\n  const command = `yt-dlp --external-downloader ffmpeg --external-downloader-args \"ffmpeg_i:-ss ${startTime} -t ${duration}\" -f \"best[height<=720][ext=mp4]\" -o \"${outputFile}\" \"${video.youtubeUrl}\"`;\n  \n  return {\n    index: index + 1,\n    videoId: video.videoId,\n    title: video.title,\n    channelTitle: video.channelTitle,\n    aiScore: video.aiScore,\n    aiReasoning: video.aiReasoning,\n    command: command,\n    outputFile: outputFile,\n    startTime: startTime,\n    duration: duration,\n    combinedScore: video.combinedScore\n  };\n});\n\n// Create FFmpeg concatenation command with better transitions\nconst inputList = downloadCommands.map(cmd => `file '${cmd.outputFile}'`).join('\\n');\nconst safeQuery = query.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');\nconst finalOutput = `${safeQuery}_compilation.mp4`;\n\nconst concatCommand = `echo \"${inputList}\" > filelist.txt && ffmpeg -f concat -safe 0 -i filelist.txt -c copy \"${finalOutput}\"`;\n\nreturn [{\n  json: {\n    query: query,\n    downloadCommands: downloadCommands,\n    concatCommand: concatCommand,\n    finalOutput: finalOutput,\n    totalClips: downloadCommands.length,\n    estimatedDuration: compilationPlan.estimatedLength,\n    qualityInfo: {\n      aiAnalyzed: true,\n      channelFiltered: true,\n      durationFiltered: true,\n      averageAiScore: downloadCommands.reduce((sum, cmd) => sum + cmd.aiScore, 0) / downloadCommands.length\n    },\n    instructions: {\n      step1: \"Run each download command to get video clips\",\n      step2: \"Run concat command to stitch clips together\", \n      step3: \"Final video will be saved as: \" + finalOutput,\n      note: \"These clips have been AI-verified for content relevance\"\n    }\n  }\n}];"
+      },
+      "id": "2b9bcf0b-2568-49b3-ae54-c98437d12732",
+      "name": "Generate Enhanced Download Commands1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        880
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Content Analysis": {
+      "main": [
+        [
+          {
+            "node": "Process AI Results1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Request Webhook": {
+      "main": [
+        [
+          {
+            "node": "Enhanced Input Processing1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Video Details Request": {
+      "main": [
+        [
+          {
+            "node": "Get Video Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video Details": {
+      "main": [
+        [
+          {
+            "node": "Create Enhanced Compilation Plan1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enhanced Input Processing1": {
+      "main": [
+        [
+          {
+            "node": "YouTube Search (Primary)1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "YouTube Search (Secondary)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Search (Primary)1": {
+      "main": [
+        [
+          {
+            "node": "Combine & Filter Results1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Search (Secondary)1": {
+      "main": [
+        [
+          {
+            "node": "Combine & Filter Results1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine & Filter Results1": {
+      "main": [
+        [
+          {
+            "node": "AI Content Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process AI Results1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Video Details Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Enhanced Compilation Plan1": {
+      "main": [
+        [
+          {
+            "node": "Generate Enhanced Download Commands1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Enhanced Download Commands1": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0879a897-4253-4e8d-bcad-892289e73911",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "88919e0d57b3217fce6e5807497b5f525e58dd9749546b32d18c9810d0ba13b1"
+  },
+  "id": "FzoZjKPRAe3y8lXc",
+  "tags": []
+}

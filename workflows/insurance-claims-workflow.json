@@ -1,0 +1,354 @@
+{
+    "name": "Insurance Claims Processing Automation",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "new-claim",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "name": "New Claim Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                240,
+                300
+            ],
+            "webhookId": "claims-intake"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "={{ $json.claimType }}",
+                        "operation": "equal",
+                        "rightValue": "auto"
+                    }
+                }
+            },
+            "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+            "name": "Auto Claim?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                460,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "model": "gpt-3.5-turbo",
+                "messages": {
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "Extract key claim information and return JSON with: policyNumber, claimantName, dateOfIncident, estimatedDamage, description, riskLevel (low/medium/high)"
+                        },
+                        {
+                            "role": "user",
+                            "content": "Claim Data: {{ JSON.stringify($json) }}"
+                        }
+                    ]
+                }
+            },
+            "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+            "name": "AI Process Claim",
+            "type": "n8n-nodes-base.openAi",
+            "typeVersion": 1,
+            "position": [
+                680,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "={{ parseInt($json.estimatedDamage) }}",
+                        "operation": "larger",
+                        "rightValue": "10000"
+                    }
+                }
+            },
+            "id": "d4e5f6a7-b8c9-0123-def0-234567890123",
+            "name": "High Value?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                900,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "model": "gpt-3.5-turbo",
+                "messages": {
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "Analyze this claim for fraud risk. Return JSON with fraudScore (1-10) and reasoning."
+                        },
+                        {
+                            "role": "user",
+                            "content": "{{ JSON.stringify($json) }}"
+                        }
+                    ]
+                }
+            },
+            "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
+            "name": "Fraud Detection",
+            "type": "n8n-nodes-base.openAi",
+            "typeVersion": 1,
+            "position": [
+                1120,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "={{ JSON.parse($json.choices[0].message.content).fraudScore }}",
+                        "operation": "larger",
+                        "rightValue": "7"
+                    }
+                }
+            },
+            "id": "f6a7b8c9-d0e1-2345-f012-456789012345",
+            "name": "High Fraud Risk?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1340,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "subject": "🚨 URGENT: High-Risk Claim Review Required",
+                "message": "HIGH PRIORITY CLAIM NEEDS IMMEDIATE REVIEW\n\nClaim ID: {{ $('New Claim Webhook').item.json.claimId }}\nClaimant: {{ $('New Claim Webhook').item.json.claimantName }}\nPolicy: {{ $('New Claim Webhook').item.json.policyNumber }}\nAmount: ${{ $('New Claim Webhook').item.json.estimatedDamage }}\n\nFRAUD SCORE: {{ JSON.parse($('Fraud Detection').item.json.choices[0].message.content).fraudScore }}/10\n\nREASON: {{ JSON.parse($('Fraud Detection').item.json.choices[0].message.content).reasoning }}\n\nACTION REQUIRED: Review within 24 hours",
+                "fromEmail": "claims-system@yourcompany.com",
+                "toEmail": "senior-adjuster@yourcompany.com"
+            },
+            "id": "a7b8c9d0-e1f2-3456-0123-567890123456",
+            "name": "Alert Senior Adjuster",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 1,
+            "position": [
+                1560,
+                50
+            ]
+        },
+        {
+            "parameters": {
+                "subject": "Claim Received - Under Review",
+                "message": "Dear {{ $('New Claim Webhook').item.json.claimantName }},\n\nWe have received your claim (ID: {{ $('New Claim Webhook').item.json.claimId }}) and it is currently under review.\n\nDue to the nature of your claim, additional verification is required. A senior adjuster will contact you within 24 hours.\n\nWe appreciate your patience.\n\nBest regards,\nClaims Team",
+                "fromEmail": "claims@yourcompany.com",
+                "toEmail": "={{ $('New Claim Webhook').item.json.claimantEmail }}"
+            },
+            "id": "b8c9d0e1-f2a3-4567-1234-678901234567",
+            "name": "Email Customer - Review",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 1,
+            "position": [
+                1560,
+                150
+            ]
+        },
+        {
+            "parameters": {
+                "subject": "Claim Received - Processing Started",
+                "message": "Dear {{ $('New Claim Webhook').item.json.claimantName }},\n\nGreat news! We have received your claim (ID: {{ $('New Claim Webhook').item.json.claimId }}) and processing has begun.\n\n✅ Initial verification complete\n✅ Expected completion: 3-5 business days\n✅ You will receive updates as your claim progresses\n\nClaim Summary:\n- Policy: {{ $('New Claim Webhook').item.json.policyNumber }}\n- Incident Date: {{ $('New Claim Webhook').item.json.dateOfIncident }}\n- Estimated Damage: ${{ $('New Claim Webhook').item.json.estimatedDamage }}\n\nNo further action required from you at this time.\n\nBest regards,\nClaims Team",
+                "fromEmail": "claims@yourcompany.com",
+                "toEmail": "={{ $('New Claim Webhook').item.json.claimantEmail }}"
+            },
+            "id": "c9d0e1f2-a3b4-5678-2345-789012345678",
+            "name": "Email Customer - Approved",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 1,
+            "position": [
+                1560,
+                250
+            ]
+        },
+        {
+            "parameters": {
+                "subject": "Property Claim Assignment",
+                "message": "New property claim requires specialist review:\n\nClaim ID: {{ $('New Claim Webhook').item.json.claimId }}\nProperty: {{ $('New Claim Webhook').item.json.location }}\nClaimant: {{ $('New Claim Webhook').item.json.claimantName }}\nDamage Type: {{ $('New Claim Webhook').item.json.description }}\nEstimated Cost: ${{ $('New Claim Webhook').item.json.estimatedDamage }}\n\nAction Required:\n- Schedule property inspection\n- Verify contractor estimates\n- Check weather data for incident date",
+                "fromEmail": "claims-system@yourcompany.com",
+                "toEmail": "property-specialist@yourcompany.com"
+            },
+            "id": "d0e1f2a3-b4c5-6789-3456-890123456789",
+            "name": "Property Specialist Alert",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 1,
+            "position": [
+                680,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "{\n  \"status\": \"success\",\n  \"message\": \"Claim processed successfully\",\n  \"claimId\": \"{{ $('New Claim Webhook').item.json.claimId }}\",\n  \"processingTime\": \"Immediate\",\n  \"nextSteps\": \"{{ $('High Fraud Risk?').item.json ? 'Senior adjuster review within 24 hours' : 'Standard processing 3-5 business days' }}\"\n}"
+            },
+            "id": "e1f2a3b4-c5d6-7890-4567-901234567890",
+            "name": "Send Response",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1780,
+                200
+            ]
+        }
+    ],
+    "connections": {
+        "New Claim Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Auto Claim?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Auto Claim?": {
+            "main": [
+                [
+                    {
+                        "node": "AI Process Claim",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Property Specialist Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Process Claim": {
+            "main": [
+                [
+                    {
+                        "node": "High Value?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "High Value?": {
+            "main": [
+                [
+                    {
+                        "node": "Fraud Detection",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Email Customer - Approved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fraud Detection": {
+            "main": [
+                [
+                    {
+                        "node": "High Fraud Risk?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "High Fraud Risk?": {
+            "main": [
+                [
+                    {
+                        "node": "Alert Senior Adjuster",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Email Customer - Review",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Email Customer - Approved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Alert Senior Adjuster": {
+            "main": [
+                [
+                    {
+                        "node": "Send Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Email Customer - Review": {
+            "main": [
+                [
+                    {
+                        "node": "Send Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Email Customer - Approved": {
+            "main": [
+                [
+                    {
+                        "node": "Send Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Property Specialist Alert": {
+            "main": [
+                [
+                    {
+                        "node": "Send Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {},
+    "versionId": "1",
+    "meta": {
+        "instanceId": "insurance-demo"
+    }
+}

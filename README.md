@@ -295,6 +295,111 @@ See `mcp-integration-guide.md` for complete setup instructions and advanced usag
 
 ---
 
+## 🖥️ NEW: Interactive Workflow Manager CLI
+
+### Professional Workflow Management Made Easy
+
+Introducing a **user-friendly command-line interface** for managing n8n workflows with enterprise-grade features:
+
+#### 🚀 Quick Start - Workflow Manager
+
+```bash
+# Using bun (recommended)
+bun run workflow-manager
+
+# Or use the short alias
+bun run wm
+
+# Traditional node
+npm run workflow-manager
+```
+
+#### ✨ Key Features
+
+- **🔍 Smart Discovery**: Automatically scans and catalogs all workflows
+- **✅ Advanced Validation**: Comprehensive syntax and configuration checking
+- **🔐 Credential Management**: Detects and guides credential setup
+- **📤 Smart Import**: Multi-endpoint API support with intelligent retry
+- **🛠️ Integration Tools**: Access to all existing debug and validation tools
+- **🎨 Beautiful UI**: Color-coded, intuitive interface for technical and non-technical users
+
+#### 📋 Main Menu Options
+
+```
+🔍 Discover & View Workflows    - Scan and display all available workflows
+✅ Validate Workflow           - Check workflow syntax and configuration  
+🔐 Manage Credentials          - Scan and manage credential requirements
+📤 Import Workflow to n8n      - Deploy workflows to your n8n instance
+🔧 Test n8n Connection         - Verify API connectivity
+🛠️  Run Integration Tools      - Access existing debug and validation tools
+❓ Help & Usage               - Show detailed help information
+🚪 Exit                       - Exit the CLI
+```
+
+#### 🎯 Perfect for Both Technical & Non-Technical Users
+
+**For Developers:**
+- JSON validation with detailed error reporting
+- Node connection analysis and optimization suggestions
+- API endpoint testing across multiple n8n versions
+- Integration with existing debug tools
+
+**For Business Users:**
+- Clean, intuitive menu navigation
+- Clear status indicators and progress feedback
+- Plain-language error messages and solutions
+- Guided credential setup process
+
+#### 📊 Workflow Discovery Example
+
+```
+📋 Available Workflows:
+
+ 1. ✓ 🌐 🔐 Stock Analysis Assistant
+    └─ AI-powered stock analysis using RSI and MACD indicators
+    └─ 25 nodes, 20.1KB, modified 12/15/2024
+
+ 2. ✓ 🌐    Video Generation Workflow  
+    └─ Enhanced video compilation with AI analysis
+    └─ 15 nodes, 29.3KB, modified 12/14/2024
+
+ 3. ✗      Insurance Claims Workflow
+    └─ Invalid JSON - Parse Error
+    └─ 18 nodes, 11.2KB, modified 12/10/2024
+
+Legend: ✓=Valid ✗=Invalid 🌐=Webhook 🔐=Credentials
+```
+
+#### 🔧 Environment Setup
+
+```bash
+# Required for import/deployment
+export N8N_BASE_URL="http://localhost:5678"
+export N8N_API_KEY="your_n8n_api_key_here"
+
+# Optional for advanced workflows
+export YOUTUBE_API_KEY="your_youtube_api_key_here"
+```
+
+#### 🛡️ Enterprise-Grade Features
+
+- **Error Recovery**: Graceful handling of all failure scenarios
+- **Multi-API Support**: Works with different n8n versions and configurations
+- **Security Validation**: Detects hardcoded credentials and security issues
+- **Comprehensive Logging**: Detailed operation logs for troubleshooting
+- **Integration Ready**: Seamlessly works with existing project tools
+
+#### 📖 Detailed Documentation
+
+See `docs/workflow-manager-guide.md` for:
+- Complete feature documentation
+- Step-by-step tutorials
+- Troubleshooting guide
+- Advanced usage examples
+- Integration instructions
+
+---
+
 ## 🏆 Ready to Transform Your Workflows?
 
 Whether you're automating insurance claims or creating AI-powered video compilations, this project demonstrates how n8n workflows combined with AI agents can revolutionize business processes.

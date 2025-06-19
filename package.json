@@ -20,7 +20,13 @@
     "webhook:test": "curl -X POST $N8N_BASE_URL/webhook/compile-video -H \"Content-Type: application/json\" -d '{\"query\": \"test\", \"max_clips\": 1}'",
     "clean:logs": "find ~/.n8n/logs -name \"*.log\" -mtime +7 -delete 2>/dev/null || true",
     "backup:config": "tar -czf backup-$(date +%Y%m%d).tar.gz config/ workflows/ scripts/",
-    "setup:env": "cp .env.example .env && echo 'Please update the API keys in .env file'"
+    "setup:env": "cp .env.example .env && echo 'Please update the API keys in .env file'",
+    "career:deploy": "node scripts/deploy-career-magnetism.js",
+    "career:collect": "node scripts/track-performance.js collect",
+    "career:report": "node scripts/track-performance.js report",
+    "career:status": "node scripts/deploy-career-magnetism.js status",
+    "career:agent": "node scripts/autonomous-career-agent.js start",
+    "career:cycle": "node scripts/autonomous-career-agent.js cycle"
   },
   "keywords": [
     "n8n",
@@ -29,7 +35,10 @@
     "ai",
     "mcp",
     "youtube",
-    "automation"
+    "automation",
+    "career",
+    "magnetism",
+    "intelligence"
   ],
   "author": "",
   "license": "ISC",

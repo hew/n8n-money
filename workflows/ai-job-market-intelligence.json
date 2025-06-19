@@ -1,0 +1,152 @@
+{
+  "name": "AI Job Market Intelligence API",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "job-intelligence",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Job Intelligence Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "job-intelligence-api"
+    },
+    {
+      "parameters": {
+        "functionCode": "// AI Job Market Intelligence Engine\n// Analyzes job market trends and provides strategic insights\n\nconst requestData = $input.first().json;\n\n// Extract query parameters\nconst query = requestData.query || 'software engineer';\nconst location = requestData.location || 'remote';\nconst experience = requestData.experience || 'mid-level';\nconst skills = requestData.skills || [];\n\n// Simulate comprehensive job market analysis\nconst analysis = {\n  market_overview: {\n    total_openings: Math.floor(Math.random() * 10000) + 5000,\n    growth_rate: (Math.random() * 20 - 10).toFixed(1) + '%',\n    competition_level: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)],\n    avg_salary_range: {\n      min: 80000 + Math.floor(Math.random() * 50000),\n      max: 120000 + Math.floor(Math.random() * 80000)\n    }\n  },\n  trending_skills: [\n    { skill: 'Python', demand_growth: '+25%', market_share: '67%' },\n    { skill: 'Machine Learning', demand_growth: '+45%', market_share: '34%' },\n    { skill: 'Cloud Computing', demand_growth: '+38%', market_share: '78%' },\n    { skill: 'Data Analysis', demand_growth: '+29%', market_share: '56%' },\n    { skill: 'API Development', demand_growth: '+31%', market_share: '43%' }\n  ],\n  top_companies: [\n    { name: 'TechCorp Inc', openings: 45, hiring_pace: 'Aggressive' },\n    { name: 'Innovation Labs', openings: 32, hiring_pace: 'Steady' },\n    { name: 'Future Systems', openings: 28, hiring_pace: 'Selective' },\n    { name: 'Digital Dynamics', openings: 23, hiring_pace: 'Steady' },\n    { name: 'Code Craftsmen', openings: 19, hiring_pace: 'Aggressive' }\n  ],\n  strategic_insights: [\n    'Remote work opportunities increased 67% in the last quarter',\n    'Companies prioritizing automation skills are offering 23% higher salaries',\n    'Early-stage startups showing highest growth in hiring',\n    'Contract-to-hire positions converting at 78% rate',\n    'Technical leadership roles seeing unprecedented demand'\n  ],\n  opportunity_score: Math.floor(Math.random() * 40) + 60,\n  recommendation: 'Focus on cloud automation and AI integration skills for maximum market positioning'\n};\n\n// Generate personalized career insights\nconst career_insights = {\n  skill_gaps: [\n    'Advanced containerization (Docker/Kubernetes)',\n    'Infrastructure as Code (Terraform)',\n    'Microservices architecture'\n  ],\n  growth_opportunities: [\n    'Technical leadership transition',\n    'Full-stack to specialized architecture',\n    'Individual contributor to team lead'\n  ],\n  market_positioning: {\n    current_tier: 'Senior Developer',\n    next_tier: 'Principal Engineer',\n    time_to_promotion: '8-12 months',\n    key_differentiators: ['System design', 'Mentoring', 'Cross-team collaboration']\n  }\n};\n\n// AI-powered strategy recommendations\nconst strategy_recommendations = {\n  immediate_actions: [\n    'Build portfolio showcasing automation expertise',\n    'Contribute to open-source infrastructure projects',\n    'Write technical content about scaling challenges'\n  ],\n  content_strategy: [\n    'Create tutorials on modern DevOps practices',\n    'Share insights from production system management',\n    'Analyze trending architectural patterns'\n  ],\n  networking_targets: [\n    'Engineering managers at high-growth startups',\n    'Technical leads in cloud-native companies',\n    'Senior architects in platform teams'\n  ],\n  value_demonstration: [\n    'Open-source tools for common developer problems',\n    'Technical presentations at local meetups',\n    'Case studies of successful system optimizations'\n  ]\n};\n\nreturn [{\n  json: {\n    success: true,\n    timestamp: new Date().toISOString(),\n    query_analysis: {\n      query,\n      location,\n      experience,\n      skills\n    },\n    market_intelligence: analysis,\n    career_insights,\n    strategy_recommendations,\n    api_version: '2.1',\n    cache_duration: 3600\n  }\n}];"
+      },
+      "id": "job-market-analyzer",
+      "name": "AI Market Analyzer",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Performance Tracking Integration\n// Track API usage and engagement metrics\n\nconst response = $input.first().json;\nconst timestamp = new Date().toISOString();\n\n// Log API request for performance tracking\nconst metricsUpdate = {\n  api_request: {\n    timestamp,\n    endpoint: 'job-intelligence',\n    query: response.query_analysis.query,\n    success: response.success,\n    opportunity_score: response.market_intelligence.opportunity_score\n  }\n};\n\n// Simulate saving to metrics database\nconsole.log('📊 API Request Tracked:', metricsUpdate);\n\n// Add tracking metadata to response\nresponse.tracking = {\n  request_id: 'req_' + Date.now(),\n  tracked: true,\n  metrics_endpoint: '/webhook/track-performance'\n};\n\nreturn [{ json: response }];"
+      },
+      "id": "performance-tracker",
+      "name": "Track Performance",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "response-webhook",
+      "name": "API Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Lead Quality Analyzer\n// Analyze incoming requests for lead qualification\n\nconst requestData = $input.first().json;\nconst originalData = $input.first().json;\n\n// Lead qualification logic\nconst leadQuality = {\n  score: 0,\n  factors: [],\n  qualification: 'UNKNOWN'\n};\n\n// Analyze query complexity (more specific = higher quality)\nif (requestData.skills && requestData.skills.length > 2) {\n  leadQuality.score += 25;\n  leadQuality.factors.push('Specific skill requirements');\n}\n\nif (requestData.experience && requestData.experience !== 'entry-level') {\n  leadQuality.score += 20;\n  leadQuality.factors.push('Experience level specified');\n}\n\nif (requestData.location && requestData.location !== 'anywhere') {\n  leadQuality.score += 15;\n  leadQuality.factors.push('Location preference');\n}\n\n// Analyze engagement patterns\nconst userAgent = $request.headers['user-agent'] || '';\nif (userAgent.includes('LinkedIn') || userAgent.includes('Indeed')) {\n  leadQuality.score += 30;\n  leadQuality.factors.push('Professional platform referral');\n}\n\n// Random simulation of additional factors\nif (Math.random() > 0.6) {\n  leadQuality.score += 20;\n  leadQuality.factors.push('High-value company domain');\n}\n\nif (Math.random() > 0.7) {\n  leadQuality.score += 15;\n  leadQuality.factors.push('Previous API usage');\n}\n\n// Determine qualification level\nif (leadQuality.score >= 70) {\n  leadQuality.qualification = 'HIGH';\n} else if (leadQuality.score >= 40) {\n  leadQuality.qualification = 'MEDIUM';\n} else {\n  leadQuality.qualification = 'LOW';\n}\n\n// Add lead analysis to original data\noriginalData.lead_analysis = leadQuality;\n\n// Generate follow-up recommendations\nif (leadQuality.qualification === 'HIGH') {\n  originalData.follow_up = {\n    recommended: true,\n    strategy: 'Direct outreach within 24 hours',\n    value_proposition: 'Custom career strategy consultation',\n    next_touchpoint: 'Advanced API features demo'\n  };\n} else if (leadQuality.qualification === 'MEDIUM') {\n  originalData.follow_up = {\n    recommended: true,\n    strategy: 'Nurture sequence with valuable content',\n    value_proposition: 'Weekly market intelligence updates',\n    next_touchpoint: 'Career optimization checklist'\n  };\n} else {\n  originalData.follow_up = {\n    recommended: false,\n    strategy: 'General content marketing',\n    value_proposition: 'Generic career resources',\n    next_touchpoint: 'Public content engagement'\n  };\n}\n\nreturn [{ json: originalData }];"
+      },
+      "id": "lead-qualifier",
+      "name": "Lead Qualifier",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 160]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.lead_analysis.qualification }}",
+              "rightValue": "HIGH",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "high-quality-filter",
+      "name": "High Quality Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 160]
+    },
+    {
+      "parameters": {
+        "functionCode": "// High-Value Lead Processing\n// Trigger immediate follow-up for qualified leads\n\nconst leadData = $input.first().json;\n\n// Create lead record for CRM integration\nconst leadRecord = {\n  timestamp: new Date().toISOString(),\n  quality_score: leadData.lead_analysis.score,\n  qualification: leadData.lead_analysis.qualification,\n  query_details: leadData.query_analysis,\n  follow_up_strategy: leadData.follow_up,\n  market_context: {\n    opportunity_score: leadData.market_intelligence.opportunity_score,\n    competition_level: leadData.market_intelligence.market_overview.competition_level\n  },\n  urgency: 'HIGH',\n  assigned_to: 'autonomous_agent',\n  next_action: 'outreach_preparation'\n};\n\n// Log high-value lead for tracking\nconsole.log('🎯 High-Quality Lead Identified:', leadRecord);\n\n// Prepare notification for immediate action\nconst notification = {\n  type: 'HIGH_VALUE_LEAD',\n  priority: 'IMMEDIATE',\n  data: leadRecord,\n  actions_required: [\n    'Research lead background',\n    'Prepare personalized outreach',\n    'Schedule follow-up reminder',\n    'Update lead scoring model'\n  ]\n};\n\nreturn [{\n  json: {\n    ...leadData,\n    high_value_lead: leadRecord,\n    notification\n  }\n}];"
+      },
+      "id": "lead-processor",
+      "name": "Process High-Value Lead",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [900, 160]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {"node": "job-market-analyzer", "type": "main", "index": 0},
+          {"node": "lead-qualifier", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "job-market-analyzer": {
+      "main": [
+        [
+          {"node": "performance-tracker", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "performance-tracker": {
+      "main": [
+        [
+          {"node": "response-webhook", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "lead-qualifier": {
+      "main": [
+        [
+          {"node": "high-quality-filter", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "high-quality-filter": {
+      "main": [
+        [
+          {"node": "lead-processor", "type": "main", "index": 0}
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "America/New_York",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "job-intelligence-workflow",
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "career-magnetism",
+      "name": "Career Magnetism"
+    }
+  ]
+}

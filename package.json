@@ -20,7 +20,11 @@
     "webhook:test": "curl -X POST $N8N_BASE_URL/webhook/compile-video -H \"Content-Type: application/json\" -d '{\"query\": \"test\", \"max_clips\": 1}'",
     "clean:logs": "find ~/.n8n/logs -name \"*.log\" -mtime +7 -delete 2>/dev/null || true",
     "backup:config": "tar -czf backup-$(date +%Y%m%d).tar.gz config/ workflows/ scripts/",
-    "setup:env": "cp .env.example .env && echo 'Please update the API keys in .env file'"
+    "setup:env": "cp .env.example .env && echo 'Please update the API keys in .env file'",
+    "setup:career": "node scripts/setup-env.js",
+    "deploy:career": "node scripts/deploy-career-magnetism-simple.js",
+    "career:setup": "node scripts/setup-env.js",
+    "career:deploy": "node scripts/deploy-career-magnetism-simple.js"
   },
   "keywords": [
     "n8n",

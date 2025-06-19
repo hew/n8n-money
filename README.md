@@ -412,3 +412,80 @@ Whether you're automating insurance claims or creating AI-powered video compilat
 ```
 
 **Need help?** Check the detailed guides in `setup-guide.md` and `local-setup-guide.md` 
+
+# n8n-money
+
+This repository contains two powerful automation systems built with n8n:
+
+1. **AI-Powered Video Compilation Workflows** - Original video generation system
+2. **🎯 AI-Powered Career Opportunity Magnetism System** - NEW! Advanced career acceleration platform
+
+---
+
+## 🎯 AI-Powered Career Opportunity Magnetism System
+
+> **Transform your job search from reactive to proactive with AI-powered automation that works 24/7**
+
+### What It Does
+
+This system implements 10+ sophisticated strategies to attract high-value AI/automation job opportunities:
+
+- **Technical Honey Pot**: AI Job Market Intelligence Dashboard that hiring managers can't resist
+- **Automated Outreach**: Context-aware, multi-channel contact campaigns  
+- **Competitive Intelligence**: Monitor and outmaneuver other candidates
+- **Reputation Automation**: Background systems that amplify your professional presence
+- **Stealth Networking**: Identify and engage key decision makers before positions are posted
+- **And 5+ more advanced strategies...**
+
+### Quick Start
+
+1. **Prerequisites**: n8n running on `http://localhost:5678`
+2. **Get API Key**: n8n Settings → API Keys
+3. **Configure Environment**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys
+   ```
+4. **Check Setup**: `bun run career:setup`
+5. **Deploy System**: `bun run career:deploy`
+
+### What You Get
+
+✅ **AI Job Market Intelligence Dashboard** - Real-time job market analysis API  
+📊 **Lead Capture System** - Track hiring manager engagement  
+🌐 **Professional Landing Page** - Showcase your automation skills  
+📈 **Multi-channel Distribution** - Automatic content sharing  
+🎯 **Success Metrics** - Track ROI and optimize performance  
+
+**Goal**: Generate 3+ high-quality interviews within 60 days through automated systems
+
+### Strategic Blueprint
+
+📋 **Complete Master Plan**: [`docs/career-magnetism-master-plan.md`](docs/career-magnetism-master-plan.md)  
+🚀 **Quick Start Guide**: [`QUICK-START.md`](QUICK-START.md)  
+
+**Implementation Timeline**:
+- **Day 1**: Deploy Technical Honey Pot (✅ Ready)
+- **Week 1**: 5 foundational strategies
+- **Week 2**: Advanced networking and intelligence systems
+- **Month 2**: Full optimization and scaling
+
+### Commands
+
+```bash
+# Environment setup and validation
+bun run career:setup
+
+# Deploy the career magnetism system  
+bun run career:deploy
+
+# Existing video workflow management
+bun run workflow-manager
+bun run import-workflows
+```
+
+---
+
+## 🎬 AI-Powered Video Compilation Workflows
+
+// ... existing code ... 

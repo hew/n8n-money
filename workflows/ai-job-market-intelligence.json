@@ -1,0 +1,362 @@
+{
+  "name": "AI Job Market Intelligence Dashboard",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hours": 6
+            }
+          ]
+        }
+      },
+      "name": "Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.adzuna.com/v1/api/jobs/us/search/1",
+        "options": {
+          "queryParameters": {
+            "app_id": "{{ $env.ADZUNA_APP_ID }}",
+            "app_key": "{{ $env.ADZUNA_API_KEY }}",
+            "what": "artificial intelligence OR machine learning OR automation OR n8n OR workflow",
+            "results_per_page": "50",
+            "sort_by": "date"
+          }
+        }
+      },
+      "name": "Fetch AI Jobs - Adzuna",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://serpapi.com/search.json",
+        "options": {
+          "queryParameters": {
+            "engine": "google_jobs",
+            "q": "AI automation workflow developer remote",
+            "location": "United States",
+            "api_key": "{{ $env.SERPAPI_KEY }}",
+            "num": "50"
+          }
+        }
+      },
+      "name": "Fetch Jobs - SerpAPI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        440,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://remoteok.io/api",
+        "options": {
+          "headers": {
+            "User-Agent": "AI-Job-Intelligence-Bot"
+          },
+          "queryParameters": {
+            "tags": "ai,automation,workflow,n8n"
+          }
+        }
+      },
+      "name": "Fetch Remote Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        440,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// AI Job Market Analysis Engine\nconst jobs = [];\n\n// Process Adzuna data\nif ($input.all()?.[0]?.json?.results) {\n  $input.all()[0].json.results.forEach(job => {\n    jobs.push({\n      source: 'adzuna',\n      title: job.title,\n      company: job.company?.display_name,\n      location: job.location?.display_name,\n      salary_min: job.salary_min,\n      salary_max: job.salary_max,\n      description: job.description,\n      url: job.redirect_url,\n      created: job.created,\n      category: job.category?.label\n    });\n  });\n}\n\n// Process SerpAPI data\nif ($input.all()?.[1]?.json?.jobs_results) {\n  $input.all()[1].json.jobs_results.forEach(job => {\n    jobs.push({\n      source: 'google_jobs',\n      title: job.title,\n      company: job.company_name,\n      location: job.location,\n      salary_min: extractSalary(job.salary, 'min'),\n      salary_max: extractSalary(job.salary, 'max'),\n      description: job.description,\n      url: job.share_link,\n      created: new Date().toISOString(),\n      category: 'technology'\n    });\n  });\n}\n\n// Process RemoteOK data\nif ($input.all()?.[2]?.json && Array.isArray($input.all()[2].json)) {\n  $input.all()[2].json.slice(1).forEach(job => { // Skip first element (metadata)\n    if (job.position) {\n      jobs.push({\n        source: 'remoteok',\n        title: job.position,\n        company: job.company,\n        location: 'Remote',\n        salary_min: job.salary_min,\n        salary_max: job.salary_max,\n        description: job.description,\n        url: job.url,\n        created: new Date(job.date).toISOString(),\n        category: 'remote'\n      });\n    }\n  });\n}\n\nfunction extractSalary(salaryString, type) {\n  if (!salaryString) return null;\n  const matches = salaryString.match(/\\$([\\d,]+)/g);\n  if (!matches) return null;\n  const amounts = matches.map(m => parseInt(m.replace(/[$,]/g, '')));\n  return type === 'min' ? Math.min(...amounts) : Math.max(...amounts);\n}\n\n// AI-Powered Market Analysis\nconst analysis = {\n  timestamp: new Date().toISOString(),\n  total_jobs: jobs.length,\n  sources: [...new Set(jobs.map(j => j.source))],\n  \n  // Salary Intelligence\n  salary_analysis: analyzeSalaries(jobs),\n  \n  // Skill Demand Analysis\n  skill_trends: analyzeSkills(jobs),\n  \n  // Company Intelligence\n  hiring_companies: analyzeCompanies(jobs),\n  \n  // Geographic Trends\n  location_trends: analyzeLocations(jobs),\n  \n  // Market Insights\n  market_insights: generateInsights(jobs)\n};\n\nfunction analyzeSalaries(jobs) {\n  const salaries = jobs.filter(j => j.salary_min && j.salary_max);\n  if (salaries.length === 0) return null;\n  \n  const minSalaries = salaries.map(j => j.salary_min).sort((a, b) => a - b);\n  const maxSalaries = salaries.map(j => j.salary_max).sort((a, b) => a - b);\n  \n  return {\n    sample_size: salaries.length,\n    min_range: {\n      p25: percentile(minSalaries, 0.25),\n      p50: percentile(minSalaries, 0.5),\n      p75: percentile(minSalaries, 0.75),\n      p90: percentile(minSalaries, 0.9)\n    },\n    max_range: {\n      p25: percentile(maxSalaries, 0.25),\n      p50: percentile(maxSalaries, 0.5),\n      p75: percentile(maxSalaries, 0.75),\n      p90: percentile(maxSalaries, 0.9)\n    },\n    average_min: Math.round(minSalaries.reduce((a, b) => a + b) / minSalaries.length),\n    average_max: Math.round(maxSalaries.reduce((a, b) => a + b) / maxSalaries.length)\n  };\n}\n\nfunction analyzeSkills(jobs) {\n  const skillKeywords = {\n    'AI/ML': ['artificial intelligence', 'machine learning', 'ai', 'ml', 'deep learning', 'neural network'],\n    'Automation': ['automation', 'n8n', 'zapier', 'workflow', 'orchestration', 'integration'],\n    'Programming': ['python', 'javascript', 'typescript', 'node.js', 'react', 'vue', 'angular'],\n    'Cloud': ['aws', 'azure', 'gcp', 'google cloud', 'kubernetes', 'docker'],\n    'Data': ['data science', 'analytics', 'sql', 'postgresql', 'mongodb', 'elasticsearch'],\n    'DevOps': ['ci/cd', 'jenkins', 'github actions', 'terraform', 'ansible']\n  };\n  \n  const skillCounts = {};\n  Object.keys(skillKeywords).forEach(category => {\n    skillCounts[category] = 0;\n    jobs.forEach(job => {\n      const text = (job.title + ' ' + job.description).toLowerCase();\n      if (skillKeywords[category].some(keyword => text.includes(keyword))) {\n        skillCounts[category]++;\n      }\n    });\n  });\n  \n  return Object.entries(skillCounts)\n    .sort((a, b) => b[1] - a[1])\n    .map(([skill, count]) => ({ skill, count, percentage: Math.round((count / jobs.length) * 100) }));\n}\n\nfunction analyzeCompanies(jobs) {\n  const companyCounts = {};\n  jobs.forEach(job => {\n    if (job.company) {\n      companyCounts[job.company] = (companyCounts[job.company] || 0) + 1;\n    }\n  });\n  \n  return Object.entries(companyCounts)\n    .sort((a, b) => b[1] - a[1])\n    .slice(0, 20)\n    .map(([company, count]) => ({ company, job_count: count }));\n}\n\nfunction analyzeLocations(jobs) {\n  const locationCounts = {};\n  jobs.forEach(job => {\n    if (job.location) {\n      const location = job.location.split(',')[0].trim(); // Get city/state\n      locationCounts[location] = (locationCounts[location] || 0) + 1;\n    }\n  });\n  \n  return Object.entries(locationCounts)\n    .sort((a, b) => b[1] - a[1])\n    .slice(0, 15)\n    .map(([location, count]) => ({ location, job_count: count }));\n}\n\nfunction generateInsights(jobs) {\n  const insights = [];\n  \n  // Remote work trends\n  const remoteJobs = jobs.filter(j => j.location && j.location.toLowerCase().includes('remote')).length;\n  const remotePercentage = Math.round((remoteJobs / jobs.length) * 100);\n  insights.push(`${remotePercentage}% of AI/automation jobs offer remote work`);\n  \n  // Salary insights\n  const salaryJobs = jobs.filter(j => j.salary_min);\n  if (salaryJobs.length > 10) {\n    const avgSalary = Math.round(salaryJobs.reduce((sum, j) => sum + (j.salary_min + j.salary_max) / 2, 0) / salaryJobs.length);\n    insights.push(`Average AI/automation salary: $${avgSalary.toLocaleString()}`);\n  }\n  \n  // Company insights\n  const companies = jobs.map(j => j.company).filter(Boolean);\n  const uniqueCompanies = new Set(companies).size;\n  insights.push(`${uniqueCompanies} companies actively hiring in AI/automation`);\n  \n  // Skill demand\n  const aiJobs = jobs.filter(j => (j.title + j.description).toLowerCase().includes('artificial intelligence')).length;\n  const automationJobs = jobs.filter(j => (j.title + j.description).toLowerCase().includes('automation')).length;\n  insights.push(`AI roles: ${aiJobs}, Automation roles: ${automationJobs}`);\n  \n  return insights;\n}\n\nfunction percentile(arr, p) {\n  const index = Math.ceil(arr.length * p) - 1;\n  return arr[index] || 0;\n}\n\nreturn [{\n  json: {\n    market_analysis: analysis,\n    job_listings: jobs.slice(0, 100), // Limit for performance\n    generated_at: new Date().toISOString(),\n    next_update: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString() // 6 hours\n  }\n}];"
+      },
+      "name": "AI Market Analysis Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# 🧠 AI Job Market Intelligence Report\n\n## 📊 Market Overview\n- **Total Jobs Analyzed**: {{ $json.market_analysis.total_jobs }}\n- **Data Sources**: {{ $json.market_analysis.sources.join(', ') }}\n- **Report Generated**: {{ $json.generated_at }}\n- **Next Update**: {{ $json.next_update }}\n\n## 💰 Salary Intelligence\n{% if $json.market_analysis.salary_analysis %}\n- **Average Salary Range**: ${{ $json.market_analysis.salary_analysis.average_min.toLocaleString() }} - ${{ $json.market_analysis.salary_analysis.average_max.toLocaleString() }}\n- **75th Percentile**: ${{ $json.market_analysis.salary_analysis.min_range.p75.toLocaleString() }} - ${{ $json.market_analysis.salary_analysis.max_range.p75.toLocaleString() }}\n- **90th Percentile**: ${{ $json.market_analysis.salary_analysis.min_range.p90.toLocaleString() }} - ${{ $json.market_analysis.salary_analysis.max_range.p90.toLocaleString() }}\n{% endif %}\n\n## 🔥 Hottest Skills\n{% for skill in $json.market_analysis.skill_trends %}\n- **{{ skill.skill }}**: {{ skill.count }} jobs ({{ skill.percentage }}%)\n{% endfor %}\n\n## 🏢 Top Hiring Companies\n{% for company in $json.market_analysis.hiring_companies.slice(0, 10) %}\n- **{{ company.company }}**: {{ company.job_count }} open positions\n{% endfor %}\n\n## 🌍 Geographic Hotspots\n{% for location in $json.market_analysis.location_trends.slice(0, 10) %}\n- **{{ location.location }}**: {{ location.job_count }} jobs\n{% endfor %}\n\n## 💡 Key Market Insights\n{% for insight in $json.market_analysis.market_insights %}\n- {{ insight }}\n{% endfor %}\n\n---\n*Powered by AI Job Market Intelligence System*\n*Built with n8n automation platform*",
+        "options": {}
+      },
+      "name": "Generate HTML Report",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [
+        840,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/gists",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {
+          "headers": {
+            "Accept": "application/vnd.github.v3+json"
+          }
+        },
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "description",
+              "value": "AI Job Market Intelligence Report - {{ new Date().toLocaleDateString() }}"
+            },
+            {
+              "name": "public",
+              "value": "true"
+            },
+            {
+              "name": "files",
+              "value": "={{ { \"ai-job-market-report.md\": { \"content\": $('Generate HTML Report').all()[0].json } } }}"
+            }
+          ]
+        }
+      },
+      "name": "Publish to GitHub Gist",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1040,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/{{ $env.SLACK_WEBHOOK_URL }}",
+        "options": {
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "text",
+              "value": "🧠 New AI Job Market Intelligence Report Available"
+            },
+            {
+              "name": "blocks",
+              "value": "=[{\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"*🧠 AI Job Market Intelligence Report*\\n\\n📊 *{{ $('AI Market Analysis Engine').item.json.market_analysis.total_jobs }}* jobs analyzed\\n💰 Avg salary: *${{ $('AI Market Analysis Engine').item.json.market_analysis.salary_analysis ? $('AI Market Analysis Engine').item.json.market_analysis.salary_analysis.average_min.toLocaleString() + ' - $' + $('AI Market Analysis Engine').item.json.market_analysis.salary_analysis.average_max.toLocaleString() : 'N/A' }}*\\n🔗 <{{ $('Publish to GitHub Gist').item.json.html_url }}|View Full Report>\"}}, {\"type\": \"divider\"}, {\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"*🔥 Hottest Skills:*\\n{{ $('AI Market Analysis Engine').item.json.market_analysis.skill_trends.slice(0, 5).map(s => s.skill + ': ' + s.percentage + '%').join('\\n') }}\"}}]"
+            }
+          ]
+        }
+      },
+      "name": "Notify Slack Channel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1240,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twitter.com/2/tweets",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "twitterOAuth2Api",
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "text",
+              "value": "🧠 Fresh AI Job Market Intelligence is here!\\n\\n📊 {{ $('AI Market Analysis Engine').item.json.market_analysis.total_jobs }} jobs analyzed\\n💰 Avg salary: ${{ $('AI Market Analysis Engine').item.json.market_analysis.salary_analysis ? $('AI Market Analysis Engine').item.json.market_analysis.salary_analysis.average_min.toLocaleString() + '-$' + $('AI Market Analysis Engine').item.json.market_analysis.salary_analysis.average_max.toLocaleString() : 'N/A' }}\\n🔥 Top skill: {{ $('AI Market Analysis Engine').item.json.market_analysis.skill_trends[0].skill }}\\n\\nFull report: {{ $('Publish to GitHub Gist').item.json.html_url }}\\n\\n#AI #Jobs #TechTrends #MachineLearning"
+            }
+          ]
+        }
+      },
+      "name": "Share on Twitter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1240,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "path": "ai-job-intelligence",
+        "options": {
+          "rawBody": true
+        },
+        "responseMode": "responseNode"
+      },
+      "name": "Public API Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $('AI Market Analysis Engine').item.json }}"
+      },
+      "name": "Return JSON Data",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lead Capture & Engagement Tracker\nconst userAgent = $('Public API Webhook').item.json.headers['user-agent'] || '';\nconst ip = $('Public API Webhook').item.json.headers['x-forwarded-for'] || $('Public API Webhook').item.json.headers['x-real-ip'] || 'unknown';\nconst referer = $('Public API Webhook').item.json.headers.referer || 'direct';\n\n// Analyze user profile\nconst userProfile = {\n  timestamp: new Date().toISOString(),\n  ip_address: ip,\n  user_agent: userAgent,\n  referrer: referer,\n  is_bot: /bot|crawler|spider/i.test(userAgent),\n  is_mobile: /mobile|android|iphone/i.test(userAgent),\n  browser: extractBrowser(userAgent),\n  potential_recruiter: isLikelyRecruiter(userAgent, referer),\n  engagement_score: calculateEngagementScore(userAgent, referer)\n};\n\nfunction extractBrowser(ua) {\n  if (ua.includes('Chrome')) return 'Chrome';\n  if (ua.includes('Firefox')) return 'Firefox';\n  if (ua.includes('Safari')) return 'Safari';\n  if (ua.includes('Edge')) return 'Edge';\n  return 'Other';\n}\n\nfunction isLikelyRecruiter(ua, referer) {\n  const recruiterIndicators = [\n    'linkedin', 'indeed', 'glassdoor', 'monster', 'ziprecruiter',\n    'greenhouse', 'lever', 'workday', 'bamboohr', 'recruitee'\n  ];\n  \n  const uaLower = ua.toLowerCase();\n  const refLower = referer.toLowerCase();\n  \n  return recruiterIndicators.some(indicator => \n    uaLower.includes(indicator) || refLower.includes(indicator)\n  );\n}\n\nfunction calculateEngagementScore(ua, referer) {\n  let score = 1; // Base score\n  \n  // Higher score for professional referrers\n  if (referer.includes('linkedin')) score += 3;\n  if (referer.includes('github')) score += 2;\n  if (referer.includes('twitter')) score += 1;\n  \n  // Higher score for business hours access\n  const hour = new Date().getHours();\n  if (hour >= 9 && hour <= 17) score += 1;\n  \n  // Higher score for desktop users (more likely to be at work)\n  if (!ua.includes('mobile')) score += 1;\n  \n  return Math.min(score, 10); // Cap at 10\n}\n\nreturn [{\n  json: {\n    user_profile: userProfile,\n    api_response: $('AI Market Analysis Engine').item.json,\n    action: userProfile.potential_recruiter ? 'high_priority_lead' : 'standard_visitor'\n  }\n}];"
+      },
+      "name": "Lead Capture Analytics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        800
+      ]
+    }
+  ],
+  "connections": {
+    "Every 6 Hours": {
+      "main": [
+        [
+          {
+            "node": "Fetch AI Jobs - Adzuna",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Jobs - SerpAPI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Remote Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch AI Jobs - Adzuna": {
+      "main": [
+        [
+          {
+            "node": "AI Market Analysis Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Jobs - SerpAPI": {
+      "main": [
+        [
+          {
+            "node": "AI Market Analysis Engine",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Fetch Remote Jobs": {
+      "main": [
+        [
+          {
+            "node": "AI Market Analysis Engine",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "AI Market Analysis Engine": {
+      "main": [
+        [
+          {
+            "node": "Generate HTML Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate HTML Report": {
+      "main": [
+        [
+          {
+            "node": "Publish to GitHub Gist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to GitHub Gist": {
+      "main": [
+        [
+          {
+            "node": "Notify Slack Channel",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Share on Twitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Public API Webhook": {
+      "main": [
+        [
+          {
+            "node": "Lead Capture Analytics",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Return JSON Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {},
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
